@@ -1,5 +1,4 @@
 # APIService
--
 
 `APIService` is a library that provides a basic HTTP request layer in Swift, using Swift Concurrency.
 
