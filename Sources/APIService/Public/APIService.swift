@@ -1,6 +1,6 @@
 import Foundation
 
-public protocol APIService {
+public protocol APIService: Sendable {
 
     // MARK: - Errors
 

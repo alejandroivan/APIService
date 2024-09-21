@@ -6,7 +6,7 @@ It allows you to enable **SSL pinning** for checking server certificates' public
 
 ## Basic structure
 
-The basic class for the library is `API`, which conforms to the `APIService` protocol.
+The basic class for the library is `API`, which conforms to the `APIService` protocol. `APIService` extends from `Sendable`.
 
 The protocol provides several methods that conform to Swift Concurrency (`async throws`), being `perform(_:validatesStatusCode:)` the most important one, because it allows you to decode the returned `Data` by yourself (or ignore it if you don't expect to get a response body).
 

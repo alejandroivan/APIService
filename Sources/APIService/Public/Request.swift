@@ -63,7 +63,7 @@ extension Request {
         return data ?? Data()
     }
 
-    private var finalURL: URL {
+    public var finalURL: URL {
         switch method {
         case .delete, .get:
             var components = URLComponents(string: baseURL.absoluteString)
