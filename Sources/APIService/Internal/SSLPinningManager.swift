@@ -49,12 +49,12 @@ final class SSLPinningManager: @unchecked Sendable {
             let certificateChain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
             !certificateChain.isEmpty
         else {
-            self.lastError = .invalidResponse(.noCertificatesFromServer)
+            self.lastError = apiError(from: .noCertificatesFromServer)
             throw .noCertificatesFromServer
         }
 
         guard try containsValidHash(certificateChain: certificateChain) else {
-            self.lastError = .invalidResponse(.invalidCertificateFromServer)
+            self.lastError = apiError(from: .invalidCertificateFromServer)
             throw .invalidCertificateFromServer
         }
 
@@ -65,7 +65,7 @@ final class SSLPinningManager: @unchecked Sendable {
         certificateChain: [SecCertificate]
     ) throws(APICertificateError) -> Bool {
         guard !keyHandler.pinnedSSLHashes.isEmpty else {
-            self.lastError = .invalidRequest(.noHashesFromKeyHandler)
+            self.lastError = apiError(from: .noHashesFromKeyHandler)
             throw .noHashesFromKeyHandler
         }
 
@@ -86,6 +86,17 @@ final class SSLPinningManager: @unchecked Sendable {
         return validHash != nil
     }
 
+    private func apiError(from error: APICertificateError) -> APIError {
+        switch error {
+        case .failedToGetPublicKey: .invalidResponse(error)
+        case .failedToGetDataFromPublicKey: .invalidResponse(error)
+        case .invalidCertificateFromServer: .invalidResponse(error)
+        case .invalidData: .invalidResponse(error)
+        case .noCertificatesFromServer: .invalidResponse(error)
+        case .noHashesFromKeyHandler: .invalidRequest(error)
+        }
+    }
+
     // MARK: - Internal Methods
 
     func validate(challenge: URLAuthenticationChallenge) -> ValidationResult {
@@ -99,7 +110,7 @@ final class SSLPinningManager: @unchecked Sendable {
                 credential: credential
             )
         } catch {
-            self.lastError = .invalidResponse(error)
+            self.lastError = apiError(from: error)
 
             return .init(
                 disposition: .cancelAuthenticationChallenge,
