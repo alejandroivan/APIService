@@ -30,17 +30,17 @@ struct MyResponseType: Decodable {
 }
 
 Task {
-	let url = URL(string: "https://...")!
-	do {
-		let response: MyResponseType = try await api.get(url)
-		
-		// or:
-		// let response = try await api.get(url) as MyResponseType
-		
-		print("The response is: \(response)
-	} catch {
-	    print("There was an error: \(error)
-	}
+    let url = URL(string: "https://...")!
+    do {
+        let response: MyResponseType = try await api.get(url)
+
+        // or:
+        // let response = try await api.get(url) as MyResponseType
+
+        print("The response is: \(response)
+    } catch {
+        print("There was an error: \(error)
+    }
 }
 ```
 
@@ -49,10 +49,11 @@ Task {
 To instantiate the API, you can use the `API(sslPinning:,validStatusCodes:)` init.
 
 ### Parameters
-| Parameter | Default value | Description |
-| --- | --- | --- |
-| `sslPinning` | `.disabled` | Defines the type of SSL pinning to be used in network requests. Possible values are `.enabledWithCertificateURLs(_ urls: [URL])`, `.enabledWithKeyHashes(_ hashes: [String])` and `.disabled`.
-| `validStatusCodes` | `Array(200...299)` | Defines the HTTP response status codes to be considered valid. If the status code is not inside this array, then the network request will fail and throw the corresponding `APIError`. Note that cerver certificates' public keys will be tested against all public keys or hashes provided. If there's one matching, the network request will succeed, or fail otherwise. |
+
+| Parameter | Type | Default value | Description |
+| --- | --- | --- | --- |
+| `sslPinning` | `API.SSLPinning` | `.disabled` | Defines the type of SSL pinning to be used in network requests. Possible values are `.enabledWithCertificateURLs(_ urls: [URL])`, `.enabledWithKeyHashes(_ hashes: [String])` and `.disabled`. |
+| `validStatusCodes` | `[Int]` | `Array(200...299)` | Defines the HTTP response status codes to be considered valid. If the status code is not inside this array, then the network request will fail and throw the corresponding `APIError`. Note that cerver certificates' public keys will be tested against all public keys or hashes provided. If there's one matching, the network request will succeed, or fail otherwise. |
 
 ### Example
 
