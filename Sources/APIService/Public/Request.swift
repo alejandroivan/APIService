@@ -24,6 +24,7 @@ public struct Request {
     // MARK: - Public Properties
 
     public let baseURL: URL
+    public let headers: [String: String]?
     public let method: HTTPMethod
     public let parameters: [String: any Encodable]
 
@@ -31,10 +32,12 @@ public struct Request {
 
     public init(
         baseURL: URL,
+        headers: [String: String]? = nil,
         method: HTTPMethod,
         parameters: [String: any Encodable] = [:]
     ) {
         self.baseURL = baseURL
+        self.headers = headers
         self.method = method
         self.parameters = parameters
     }
@@ -46,6 +49,7 @@ extension Request {
 
     var urlRequest: URLRequest {
         var request = URLRequest(url: finalURL)
+        request.allHTTPHeaderFields = headers
         request.httpMethod = method.rawValue
 
         switch method {
@@ -80,5 +84,22 @@ extension Request {
         case .post, .put:
             return baseURL
         }
+    }
+}
+
+extension Request: CustomStringConvertible {
+
+    public var description: String {
+        var output = "("
+
+        output += "baseURL: \(self.baseURL.absoluteString), "
+        output += "headers: \(self.headers?.description ?? "<no custom headers>"), "
+        output += "method: \(self.method), "
+        output += "parameters: \(!self.parameters.isEmpty ? self.parameters.description : "<no parameters>"), "
+        output += "finalURL: \(self.finalURL.absoluteString)"
+
+        output += ")"
+
+        return output
     }
 }

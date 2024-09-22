@@ -1,6 +1,6 @@
 import Foundation
 
-public struct API: APIService {
+public struct API: APIService, DebugLogger {
 
     // MARK: - Constants
 
@@ -22,6 +22,11 @@ public struct API: APIService {
     /// Determines the status codes to be considered valid. If any other status code is returned
     /// from the network request, the API call will throw `APIError.invalidStatusCode(_:)`.
     public let validStatusCodes: [Int]
+    
+    /// Defines the base headers for all HTTP requests made using this particular API instance.
+    /// If any method specifies additional headers and there's a conflict, the method's particular
+    /// one takes priority.
+    public let baseHeaders: [String: String]?
 
     public var lastError: APIError? {
         sessionDelegate?.lastError
@@ -37,7 +42,8 @@ public struct API: APIService {
 
     public init(
         sslPinning: SSLPinning = .disabled,
-        validStatusCodes: [Int] = Array(200...299)
+        validStatusCodes: [Int] = Array(200...299),
+        baseHeaders: [String: String]? = nil
     ) {
         // Set up the SessionDelegate for SSL pinning (if required)
         switch sslPinning {
@@ -60,6 +66,9 @@ public struct API: APIService {
         // Set up the valid status codes
         self.validStatusCodes = validStatusCodes
 
+        // Set up the base headers for all requests
+        self.baseHeaders = baseHeaders
+
         // Set up the URLSession
         let configuration = URLSessionConfiguration.ephemeral
         configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -69,6 +78,28 @@ public struct API: APIService {
             delegate: self.sessionDelegate,
             delegateQueue: nil
         )
+
+        self.log("""
+        Initialized.
+        - SSL pinning: \(sslPinning)
+        - Valid status codes: \(validStatusCodes.debugDescription)
+        - Base headers: \(baseHeaders?.debugDescription ?? "<not set>")
+        - Session: \(self.session.debugDescription)
+        """)
+    }
+
+    // MARK: - Private Methods
+
+    private func getHeaders(adding headers: [String: String]?) -> [String: String]? {
+        guard let headers else {
+            return self.baseHeaders
+        }
+
+        let baseHeaders = self.baseHeaders ?? [:]
+
+        return baseHeaders.merging(headers) { _, newValue in
+            newValue // If there's a conflict, we prioritize the custom header.
+        }
     }
 
     // MARK: - Public Methods - APIService
@@ -77,6 +108,11 @@ public struct API: APIService {
         _ request: Request,
         validatesStatusCode: Bool = false
     ) async throws(APIError) -> (Data, HTTPURLResponse) {
+        self.log("""
+        \(#function)
+        - request: \(request)
+        - validatesStatusCode: \(validatesStatusCode)
+        """)
         do {
             let (data, urlResponse) = try await session.data(for: request.urlRequest)
 
@@ -85,7 +121,7 @@ public struct API: APIService {
             }
 
             if validatesStatusCode, !validStatusCodes.contains(httpURLResponse.statusCode) {
-                throw APIError.invalidStatusCode(httpURLResponse.statusCode)
+                throw APIError.invalidStatusCode(httpURLResponse.statusCode, data: data)
             }
 
             return (data, httpURLResponse)
@@ -98,9 +134,14 @@ public struct API: APIService {
     }
 
     public func delete<Output: Decodable>(
-        _ url: URL
+        _ url: URL,
+        headers: [String: String]? = nil
     ) async throws(APIError) -> Output {
-        let request = Request(baseURL: url, method: .delete)
+        let request = Request(
+            baseURL: url,
+            headers: getHeaders(adding: headers),
+            method: .delete
+        )
         let (data, _) = try await perform(request, validatesStatusCode: true)
 
         do {
@@ -112,9 +153,14 @@ public struct API: APIService {
     }
 
     public func get<Output: Decodable>(
-        _ url: URL
+        _ url: URL,
+        headers: [String: String]? = nil
     ) async throws(APIError) -> Output {
-        let request = Request(baseURL: url, method: .get)
+        let request = Request(
+            baseURL: url,
+            headers: getHeaders(adding: headers),
+            method: .get
+        )
         let (data, _) = try await perform(request, validatesStatusCode: true)
 
         do {
@@ -127,9 +173,15 @@ public struct API: APIService {
 
     public func post<Output: Decodable>(
         _ url: URL,
+        headers: [String: String]? = nil,
         parameters: [String: any Encodable]
     ) async throws(APIError) -> Output {
-        let request = Request(baseURL: url, method: .post, parameters: parameters)
+        let request = Request(
+            baseURL: url,
+            headers: getHeaders(adding: headers),
+            method: .post,
+            parameters: parameters
+        )
         let (data, _) = try await perform(request, validatesStatusCode: true)
 
         do {
@@ -142,9 +194,15 @@ public struct API: APIService {
 
     public func put<Output: Decodable>(
         _ url: URL,
+        headers: [String: String]? = nil,
         parameters: [String: any Encodable]
     ) async throws(APIError) -> Output {
-        let request = Request(baseURL: url, method: .put, parameters: parameters)
+        let request = Request(
+            baseURL: url,
+            headers: getHeaders(adding: headers),
+            method: .put,
+            parameters: parameters
+        )
         let (data, _) = try await perform(request, validatesStatusCode: true)
 
         do {
