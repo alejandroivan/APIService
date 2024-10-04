@@ -1,6 +1,6 @@
 import Foundation
 
-final class SessionDelegate: NSObject, URLSessionTaskDelegate, Sendable, DebugLogger {
+final class SessionDelegate: NSObject, URLSessionTaskDelegate, Sendable, Logging {
 
     // MARK: - Properties
 
@@ -25,7 +25,7 @@ final class SessionDelegate: NSObject, URLSessionTaskDelegate, Sendable, DebugLo
         didReceive challenge: URLAuthenticationChallenge
     ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
         let result = sslPinningManager.validate(challenge: challenge)
-        self.log("(\(#function) Output: (\(result.disposition), \(result.credential))")
+        logger.debug("Output: (\(String(describing: result.disposition)), \(String(describing: result.credential)))")
         return (result.disposition, result.credential)
     }
 
@@ -35,7 +35,7 @@ final class SessionDelegate: NSObject, URLSessionTaskDelegate, Sendable, DebugLo
         didReceive challenge: URLAuthenticationChallenge
     ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
         let result = sslPinningManager.validate(challenge: challenge)
-        self.log("(\(#function) Output: (\(result.disposition), \(result.credential))")
+        logger.debug("Output: (\(String(describing: result.disposition)), \(String(describing: result.credential)))")
         return (result.disposition, result.credential)
     }
 }

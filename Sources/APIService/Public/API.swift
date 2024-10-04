@@ -1,11 +1,11 @@
 import Foundation
 
-public struct API: APIService, DebugLogger {
+public struct API: APIService, Logging {
 
     // MARK: - Constants
 
     /// Determines the type of SSL pinning to be used for the network request.
-    public enum SSLPinning {
+    public enum SSLPinning: CustomStringConvertible {
 
         /// Configures SSL pinning using local file URLs for DER certificates.
         case enabledWithCertificateURLs(_ certificateURLs: [URL])
@@ -73,19 +73,22 @@ public struct API: APIService, DebugLogger {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
 
-        self.session = URLSession(
+        let session = URLSession(
             configuration: configuration,
             delegate: self.sessionDelegate,
             delegateQueue: nil
         )
+        self.session = session
 
-        self.log("""
-        Initialized.
-        - SSL pinning: \(sslPinning)
-        - Valid status codes: \(validStatusCodes.debugDescription)
-        - Base headers: \(baseHeaders?.debugDescription ?? "<not set>")
-        - Session: \(self.session.debugDescription)
-        """)
+        logger.info(
+            """
+            Initialized.
+            - SSL pinning: \(sslPinning)
+            - Valid status codes: \(validStatusCodes.debugDescription)
+            - Base headers: \(baseHeaders?.debugDescription ?? "<not set>")
+            - Session: \(session.debugDescription)
+            """
+        )
     }
 
     // MARK: - Private Methods
@@ -108,11 +111,14 @@ public struct API: APIService, DebugLogger {
         _ request: Request,
         validatesStatusCode: Bool = false
     ) async throws(APIError) -> (Data, HTTPURLResponse) {
-        self.log("""
-        \(#function)
-        - request: \(request)
-        - validatesStatusCode: \(validatesStatusCode)
-        """)
+        logger.info(
+            """
+            \(#function)
+            - request: \(request)
+            - validatesStatusCode: \(validatesStatusCode)
+            """
+        )
+
         do {
             let (data, urlResponse) = try await session.data(for: request.urlRequest)
 
@@ -210,6 +216,20 @@ public struct API: APIService, DebugLogger {
             return object
         } catch {
             throw .undecodableResponseData(data)
+        }
+    }
+}
+
+extension API.SSLPinning {
+
+    public var description: String {
+        switch self {
+        case .enabledWithCertificateURLs(let certificateURLs):
+            "\(Self.self).enabledWithCertificateURLs(\(certificateURLs))"
+        case .enabledWithKeyHashes(let keyHashes):
+            "\(Self.self).enabledWithKeyHashes(\(keyHashes))"
+        case .disabled:
+            "\(Self.self).disabled"
         }
     }
 }

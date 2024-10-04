@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-final class SSLPinningManager: @unchecked Sendable, DebugLogger {
+final class SSLPinningManager: @unchecked Sendable, Logging {
 
     // MARK: - Constants
 
@@ -101,7 +101,8 @@ final class SSLPinningManager: @unchecked Sendable, DebugLogger {
     // MARK: - Internal Methods
 
     func validate(challenge: URLAuthenticationChallenge) -> ValidationResult {
-        self.log("\(#function) - keyHandler: \(keyHandler)")
+        logger.debug("\(#function) - keyHandler: \(self.keyHandler.description)")
+
         do {
             let trust = try validateAndGetTrust(challenge: challenge)
             let credential = URLCredential(trust: trust)
